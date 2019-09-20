@@ -204,9 +204,9 @@ def rmse(dpl, exp_dpl, tstart=0.0, tstop=0.0, weights=None):
     # do tstart and tstop fall within both datasets?
     # if not, use the closest data point as the new tstop/tstart
     for tseries in [exp_times, sim_times]:
-        if tstart <  tseries[0]:
+        if tstart < tseries[0]:
             tstart = tseries[0]
-        if tstop >  tseries[-1]:
+        if tstop > tseries[-1]:
             tstop = tseries[-1]
 
     # make sure start and end times are valid for both dipoles
@@ -237,7 +237,7 @@ def rmse(dpl, exp_dpl, tstart=0.0, tstop=0.0, weights=None):
         # downsample exp timeseries to match simulation data
         dpl2 = signal.resample(dpl2, sim_length)
 
-    return np.sqrt((weights * ((dpl1 - dpl2) ** 2)).sum()/weights.sum())
+    return np.sqrt((weights * ((dpl1 - dpl2) ** 2)).sum() / weights.sum())
 
 
 class Dipole(object):
@@ -267,7 +267,7 @@ class Dipole(object):
 
         shp = data.shape
         keys = ['agg', 'L2', 'L5']
-        for key, tseries in zip(keys,range(shp[1])):
+        for key, tseries in zip(keys, range(shp[1])):
             self.dpl[key] = data[:, tseries]
 
     def convert_fAm_to_nAm(self):
