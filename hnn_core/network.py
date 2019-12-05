@@ -21,6 +21,8 @@ class Network(object):
     ----------
     params : dict
         The parameters
+    extfeed : dict
+        Instance of ExtFeed
     n_jobs : int
         The number of jobs to run in parallel
 
@@ -44,7 +46,7 @@ class Network(object):
         The list contains the cell IDs of neurons that spiked.
     """
 
-    def __init__(self, params, n_jobs=1):
+    def __init__(self, params, extfeed, n_jobs=1):
         from .parallel import create_parallel_context
         # setup simulation (ParallelContext)
         create_parallel_context(n_jobs=n_jobs)
@@ -80,9 +82,7 @@ class Network(object):
         # Global number of external inputs ... automatic counting
         # makes more sense
         # p_unique represent ext inputs that are going to go to each cell
-        self.p_ext, self.p_unique = create_pext(self.params,
-                                                self.params['tstop'])
-        self.N_extinput = len(self.p_ext)
+        self.N_extinput = len(extfeed)
         # Source list of names
         # in particular order (cells, extinput, alpha names of unique inputs)
         self.src_list_new = self._create_src_list()
@@ -109,9 +109,7 @@ class Network(object):
         self._gid_assign()
         # create cells (and create self.origin in create_cells_pyr())
         self.cells = []
-        self.extinput_list = []
-        # external unique input list dictionary
-        self.ext_list = dict.fromkeys(self.p_unique)
+
         # initialize the lists in the dict
         for key in self.ext_list.keys():
             self.ext_list[key] = []
@@ -340,8 +338,8 @@ class Network(object):
                     p_ind = gid - self.gid_dict['extinput'][0]
                     # now use the param index in the params and create
                     # the cell and artificial NetCon
-                    self.extinput_list.append(ExtFeed(
-                        type, None, self.p_ext[p_ind], gid))
+                    self.extinput_list.append(extfeed)
+                    extfeed.gid = gid
                     pc.cell(
                         gid, self.extinput_list[-1].connect_to_target(
                             self.params['threshold']))

@@ -14,15 +14,25 @@ class ExtFeed(object):
     ----------
     ty : str
         The feed type. Can be:
-        'extpois', 'evprox', 'evdist', 'extgauss', 'extinput'
+        'extpois', 'evprox*', 'evdist*', 'extgauss', 'extinput'
     celltype : str | None
         The cell type.
     p_ext : dict | list (XXX: check)
         Parameters of external input.
         p_ext has a different structure for the extinput
         usually, p_ext is a dict of cell types
-    gid : int
-        The cell ID.
+    t0 : float
+        The start time of the external feed.
+    t_interval : float
+        The duration of the external feed.
+    numspikes : int
+        The number of spikes
+    sync_evinput : bool
+        Whether to sync the inputs to evoked or not. Can be True
+        only if ty starts with 'evprox' or 'evdist'.
+    prng_seedcore : int
+        The seed for ty='extinput'
+    expand this guy here
 
     Attributes
     ----------
@@ -32,7 +42,7 @@ class ExtFeed(object):
         The cell ID
     """
 
-    def __init__(self, ty, celltype, p_ext, gid):
+    def __init__(self, ty, celltype, p_ext):
         # VecStim setup
         self.eventvec = h.Vector()
         self.vs = h.VecStim()
@@ -40,7 +50,7 @@ class ExtFeed(object):
         self.p_ext = p_ext
         self.celltype = celltype
         self.ty = ty  # feed type
-        self.gid = gid
+        self.gid = None
         self.set_prng()  # sets seeds for random num generator
         # sets event times into self.eventvec and plays into self.vs (VecStim)
         self.set_event_times()
