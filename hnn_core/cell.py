@@ -192,17 +192,14 @@ class _Cell(ABC):
         # setting pointers and ztan values
         for sect in sec_list:
             dpp = h.Dipole(1, sec=sect)  # defined in dipole_pp.mod
-            dpp.ri = h.ri(1, sec=sect)  # assign internal resistance
-            # sets pointers in dipole mod file to the correct locations
-            dpp._ref_pv = sect(0.99)._ref_v
-            dpp._ref_Qtotal = self.dpl_ref
             # gives INTERNAL segments of the section, non-endpoints
             # creating this because need multiple values simultaneously
             pos = np.array([seg.x for seg in sect.allseg()])
             loc = pos[1:-1]  # positions without 0 and L
             # diff in yvals, scaled against the pos np.array. y_long as
             # in longitudinal
-            y_scale = (yscale[sect.name().split('_', 1)[1]] * sect.L) * pos
+            sect_name = sect.name().split('_', 1)[1]
+            y_scale = (yscale[sect_name] * sect.L) * pos
             # y_long = (h.y3d(1, sec=sect) - h.y3d(0, sec=sect)) * pos
             # diff values calculate length between successive section points
             y_diff = np.diff(y_scale)
