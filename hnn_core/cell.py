@@ -88,8 +88,6 @@ class _Cell(ABC):
     ----------
     pos : list of length 3
         The position of the cell.
-    dipole_pp : list of h.Dipole()
-        The Dipole objects (see dipole.mod).
     dict_currents : dict of h.Vector()
         The soma currents (keys are soma_gabaa, soma_gabab etc.)
     rec_v : h.Vector()
@@ -188,13 +186,13 @@ class _Cell(ABC):
         sec_list.wholetree(sec=self.soma)
         sec_list = [sec for sec in sec_list]
         for sect in sec_list:
-            sect.insert('dipole')
+            sect.insert('dipole')  # see dipole.mod
         # setting pointers and ztan values
         for sect in sec_list:
-            dpp = h.Dipole(1, sec=sect)  # defined in dipole_pp.mod
             # gives INTERNAL segments of the section, non-endpoints
             # creating this because need multiple values simultaneously
-            pos = np.array([seg.x for seg in sect.allseg()])  # includes 0 and L
+            # pos includes 0 and L
+            pos = np.array([seg.x for seg in sect.allseg()])
             # diff in yvals, scaled against the pos np.array. y_long as
             # in longitudinal
             sect_name = sect.name().split('_', 1)[1]
@@ -215,8 +213,6 @@ class _Cell(ABC):
                 sect(seg_pos).dipole._ref_Qsum = self.dpl_ref  # aggregate
                 # add ztan values
                 sect(seg_pos).dipole.ztan = y_diff[idx]
-            # set the pp dipole's ztan value to the last value from y_diff
-            dpp.ztan = y_diff[-1]
         self.dipole = h.Vector().record(self.dpl_ref)
 
     def record_current_soma(self):
