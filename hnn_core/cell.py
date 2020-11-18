@@ -194,8 +194,7 @@ class _Cell(ABC):
             dpp = h.Dipole(1, sec=sect)  # defined in dipole_pp.mod
             # gives INTERNAL segments of the section, non-endpoints
             # creating this because need multiple values simultaneously
-            pos = np.array([seg.x for seg in sect.allseg()])
-            loc = pos[1:-1]  # positions without 0 and L
+            pos = np.array([seg.x for seg in sect.allseg()])  # includes 0 and L
             # diff in yvals, scaled against the pos np.array. y_long as
             # in longitudinal
             sect_name = sect.name().split('_', 1)[1]
@@ -206,21 +205,16 @@ class _Cell(ABC):
             # y_diff = np.diff(y_long)
             # doing range to index multiple values of the same
             # np.array simultaneously
-            for i in range(len(loc)):
+            for idx, seg_pos in enumerate(pos[1:-1]):
                 # assign the ri value to the dipole
-                sect(loc[i]).dipole.ri = h.ri(loc[i], sec=sect)
+                sect(seg_pos).dipole.ri = h.ri(seg_pos, sec=sect)
                 # range variable 'dipole'
                 # set pointers to previous segment's voltage, with
                 # boundary condition
-                if i > 0:
-                    sect(loc[i]).dipole._ref_pv = sect(loc[i - 1])._ref_v
-                else:
-                    sect(loc[i]).dipole._ref_pv = sect(0)._ref_v
-                # set aggregate pointers
-                sect(loc[i]).dipole._ref_Qsum = dpp._ref_Qsum
-                sect(loc[i]).dipole._ref_Qtotal = self.dpl_ref
+                sect(seg_pos).dipole._ref_pv = sect(pos[idx - 1])._ref_v
+                sect(seg_pos).dipole._ref_Qsum = self.dpl_ref  # aggregate
                 # add ztan values
-                sect(loc[i]).dipole.ztan = y_diff[i]
+                sect(seg_pos).dipole.ztan = y_diff[idx]
             # set the pp dipole's ztan value to the last value from y_diff
             dpp.ztan = y_diff[-1]
         self.dipole = h.Vector().record(self.dpl_ref)

@@ -11,7 +11,6 @@ NEURON {
 
     : for density. sums into Dipole at section position 1
     POINTER Qsum
-    POINTER Qtotal
 }
 
 UNITS {
@@ -33,7 +32,6 @@ ASSIGNED {
 
     : human dipole order of 10 nAm
     Qsum (fAm)
-    Qtotal (fAm)
 }
 
 : solve for v's first then use them
@@ -41,12 +39,10 @@ AFTER SOLVE {
     ia = (pv - v) / ri
     Q = ia * ztan
     Qsum = Qsum + Q
-    Qtotal = Qtotal + Q
 }
 
 AFTER INITIAL {
     ia = (pv - v) / ri
     Q = ia * ztan
     Qsum = Qsum + Q
-    Qtotal = Qtotal + Q
 }
