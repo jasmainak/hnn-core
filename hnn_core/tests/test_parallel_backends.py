@@ -14,6 +14,11 @@ from hnn_core import simulate_dipole, Network, read_params
 from hnn_core import MPIBackend, JoblibBackend
 
 
+def test_run_mpibackend():
+    """Test running a MPIBackend on reduced model"""
+    dpls_reduced_mpi, _ = run_hnn_core(backend='mpi', reduced=True)
+
+
 def run_hnn_core(backend=None, n_procs=None, n_jobs=1, reduced=False):
     hnn_core_root = op.dirname(hnn_core.__file__)
 

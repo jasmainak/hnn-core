@@ -12,6 +12,7 @@ import base64
 def _read_all_bytes(stream_in, chunk_size=4096):
     all_data = b""
     while True:
+        sdfdfdf
         data = stream_in.read(chunk_size)
         all_data += data
         if len(data) < chunk_size:

@@ -398,7 +398,7 @@ class MPIBackend(object):
             if not proc.poll() is None:
                 if completed is True:
                     break
-                elif timeout > 4:
+                elif timeout > 1:
                     # This is indicative of a failure. For debugging purposes.
                     warn("Timed out (5s) waiting for end of data after child "
                          "process stopped")
