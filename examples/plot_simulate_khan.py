@@ -62,13 +62,7 @@ net.add_bursty_drive(
         repeats=1, weights_ampa=weights_ampa, weights_nmda=weights_nmda,
         location=location, seedcore=2)
 
-###############################################################################
-# Now let's simulate the dipole, running 2 trials with the Joblib backend.
-# To run them in parallel we could set n_jobs to equal the number of trials.
-from hnn_core import JoblibBackend
-
-with JoblibBackend(n_jobs=1):
-    dpls = simulate_dipole(net, n_trials=1, postproc=True)
+dpls = simulate_dipole(net, n_trials=1, postproc=True)
 
 ###############################################################################
 # and then plot it
