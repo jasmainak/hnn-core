@@ -7,10 +7,24 @@ What's new?
 
 .. currentmodule:: hnn_core
 
-.. _current:
+.. _current
 
 Current
 -------
+
+Changelog
+~~~~~~~~~
+
+Bug
+~~~
+
+API
+~~~
+
+.. _0.1:
+
+0.1
+---
 
 Changelog
 ~~~~~~~~~
@@ -85,10 +99,14 @@ API
 
 - Examples apply random state seeds that reproduce the output of HNN GUI documentation, by `Christopher Bailey`_ in `#221 <https://github.com/jonescompneurolab/hnn-core/pull/221>`_
 
-.. _Mainak Jas: http://jasmainak.github.io/
+People who contributed to this release (in alphabetical order):
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. _Blake Caldwell: https://github.com/blakecaldwell
-.. _Ryan Thorpe: https://github.com/rythorpe
 .. _Christopher Bailey: https://github.com/cjayb
-.. _Nick Tolley: https://github.com/ntolley
 .. _Carmen Kohl: https://github.com/kohl-carmen
+.. _Mainak Jas: http://jasmainak.github.io/
+.. _Nick Tolley: https://github.com/ntolley
+.. _Ryan Thorpe: https://github.com/rythorpe
 .. _Samika Kanekar: https://github.com/samikane
+.. _Stephanie Jones: https://github.com/stephanie-r-jones
