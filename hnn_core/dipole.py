@@ -152,7 +152,7 @@ def rmse(dpl, exp_dpl, tstart=0.0, tstop=0.0, weights=None):
         Time at end of range over which to calculate RMSE
     weights | None: array
         An array of weights to be applied to each point in
-        simulated dpl. Must have length >= dpl.dpl
+        simulated dpl. Must have length >= dpl.data
         If None, weights will be replaced with 1's for typical RMSE
         calculation.
 
@@ -163,8 +163,8 @@ def rmse(dpl, exp_dpl, tstart=0.0, tstop=0.0, weights=None):
     """
     from scipy import signal
 
-    exp_times = exp_dpl.t
-    sim_times = dpl.t
+    exp_times = exp_dpl.times
+    sim_times = dpl.times
 
     # do tstart and tstop fall within both datasets?
     # if not, use the closest data point as the new tstop/tstart
@@ -189,8 +189,8 @@ def rmse(dpl, exp_dpl, tstart=0.0, tstop=0.0, weights=None):
         weights = np.ones(len(sim_times[0:sim_end_index]))
     weights = weights[sim_start_index:sim_end_index]
 
-    dpl1 = dpl.dpl['agg'][sim_start_index:sim_end_index]
-    dpl2 = exp_dpl.dpl['agg'][exp_start_index:exp_end_index]
+    dpl1 = dpl.data['agg'][sim_start_index:sim_end_index]
+    dpl2 = exp_dpl.data['agg'][exp_start_index:exp_end_index]
 
     if (sim_length > exp_length):
         # downsample simulation timeseries to match exp data
