@@ -44,7 +44,10 @@ print(params['L2Pyr_soma*'])
 # inside it.
 net = Network(params)
 net.plot_cells()
+<<<<<<< HEAD
 net.plot_cell_morphology()
+=======
+>>>>>>> ENH: Try mybinder demo
 
 ###############################################################################
 # The network of cells is now defined, to which we add external drives as
@@ -135,4 +138,3 @@ dpls_sync = simulate_dipole(net_sync, n_trials=1)
 trial_idx = 0
 dpls_sync[trial_idx].plot()
 net_sync.cell_response.plot_spikes_hist()
-"""
