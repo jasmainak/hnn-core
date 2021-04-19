@@ -135,3 +135,4 @@ dpls_sync = simulate_dipole(net_sync, n_trials=1)
 trial_idx = 0
 dpls_sync[trial_idx].plot()
 net_sync.cell_response.plot_spikes_hist()
+"""
