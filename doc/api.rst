@@ -20,6 +20,10 @@ Simulation (:py:mod:`hnn_core`):
    Cell
    CellResponse
 
+Optimization (:py:mod:`hnn_core`):
+----------------------------------
+   optimize_evoked
+
 Dipole (:py:mod:`hnn_core.dipole`):
 -----------------------------------
 
