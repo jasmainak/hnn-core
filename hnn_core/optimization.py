@@ -176,7 +176,7 @@ def create_last_chunk(input_chunks):
             chunk['opt_end'] = evinput['opt_end']
 
     # wRMSE with weights of 1's is the same as regular RMSE.
-    chunk['weights'] = np.ones(len(input_chunks[-1]['weights']))
+    chunk['weights'] = np.ones_like(input_chunks[-1]['weights'])
 
     return chunk
 
@@ -187,7 +187,7 @@ def consolidate_chunks(inputs):
 
     Parameters
     ----------
-    inputs: Dict
+    inputs: dict
         Sorted dictionary of inputs with their parameters
         and weight functions
 
