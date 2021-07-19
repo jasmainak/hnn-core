@@ -21,7 +21,7 @@ def _get_range(val, multiplier):
     return ranges
 
 
-def split_by_evinput(params, sigma_range_multiplier, timing_range_multiplier,
+def split_by_evinput(net, sigma_range_multiplier, timing_range_multiplier,
                      synweight_range_multiplier):
     """ Sorts parameter ranges by evoked inputs into a dictionary
 
@@ -54,52 +54,51 @@ def split_by_evinput(params, sigma_range_multiplier, timing_range_multiplier,
     """
 
     evinput_params = {}
-    for evinput_t in params['t_*']:
-        id_str = evinput_t.lstrip('t_')
-        timing_mean = float(params[evinput_t])
+    for drive in net.external_drives:
+        if drive['type'] != 'evoked':
+            continue
 
-        if f'sigma_{evinput_t}' in params:
-            timing_sigma = float(params['sigma_' + evinput_t])
-        else:
-            timing_sigma = 3.0
-            print("Couldn't fing timing_sigma. Using default %f" %
-                  timing_sigma)
+        drive_name = drive['name']
+        timing_mean = drive['dynamics']['mu']
+        timing_sigma = drive['dynamics']['sigma']
 
         if timing_sigma == 0.0:
             # sigma of 0 will not produce a CDF
             timing_sigma = 0.01
 
-        evinput_params[id_str] = {'mean': timing_mean, 'sigma': timing_sigma,
-                                  'ranges': {}}
+        evinput_params[drive_name] = {'mean': timing_mean,
+                                      'sigma': timing_sigma,
+                                      'ranges': {}}
 
-        evinput_params[id_str]['ranges']['sigma_' + evinput_t] = \
+        evinput_params[drive_name]['ranges']['sigma_' + drive_name] = \
             _get_range(timing_sigma, sigma_range_multiplier)
 
         # calculate range for time
         timing_bound = timing_sigma * timing_range_multiplier
         range_min = max(0, timing_mean - timing_bound)
-        range_max = min(float(params['tstop']), timing_mean + timing_bound)
+        range_max = min(net._params['tstop'], timing_mean + timing_bound)
 
-        evinput_params[id_str]['start'] = range_min
-        evinput_params[id_str]['end'] = range_max
-        evinput_params[id_str]['ranges'][evinput_t] =  \
+        evinput_params[drive_name]['start'] = range_min
+        evinput_params[drive_name]['end'] = range_max
+        evinput_params[drive_name]['ranges']['mu_' + drive_name] =  \
             {'initial': timing_mean, 'minval': range_min, 'maxval': range_max}
 
         # calculate ranges for syn. weights
-        for label in params[f'gbar_{id_str}*']:
-            value = params[label]
-            ranges = _get_range(value, synweight_range_multiplier)    
-            if value == 0.0:
-                ranges['minval'] = value
-                ranges['maxval'] = 1.0
-            evinput_params[id_str]['ranges'][label] = ranges
+        for receptor in ['weights_ampa', 'weights_nmda']:
+            for target_celltype, drive_weight in drive[receptor].items():
+                ranges = _get_range(drive_weight, synweight_range_multiplier)
+                if drive_weight == 0.0:
+                    ranges['minval'] = drive_weight
+                    ranges['maxval'] = 1.0
+                label = f'{receptor}_{drive_name}_{target_celltype}'
+                evinput_params[drive_name]['ranges'][label] = ranges
 
     sorted_evinput_params = OrderedDict(sorted(evinput_params.items(),
                                                key=lambda x: x[1]['start']))
     return sorted_evinput_params
 
 
-def _generate_weights(evinput_params, params, decay_multiplier):
+def _generate_weights(evinput_params, net, decay_multiplier):
     """Calculation of weight function for wRMSE calcuation
 
     Returns
@@ -109,8 +108,9 @@ def _generate_weights(evinput_params, params, decay_multiplier):
         to evinput_params[input_name] and removes 'mean'
         and 'sigma' which were needed to compute 'weights'.
     """
-    num_step = ceil(params['tstop'] / params['dt']) + 1
-    times = np.linspace(0, params['tstop'], num_step)
+    tstop, dt = net._params['tstop'], net._params['dt']
+    num_step = ceil(tstop / dt) + 1
+    times = np.linspace(0, tstop, num_step)
 
     for evinput_this in evinput_params.values():
         # calculate cdf using start time (minival of optimization range)
@@ -128,7 +128,7 @@ def _generate_weights(evinput_params, params, decay_multiplier):
                 continue
 
             decay_factor = decay_multiplier * \
-                (evinput_other['mean'] - evinput_this['mean']) / params['tstop']
+                (evinput_other['mean'] - evinput_this['mean']) / tstop
             evinput_this['weights'] -= evinput_other['cdf'] * decay_factor
 
         # weights should not drop below 0
@@ -143,10 +143,9 @@ def _generate_weights(evinput_params, params, decay_multiplier):
                                       times[indices][-1])
 
         # convert to multiples of dt
-        evinput_this['opt_start'] = floor(
-            evinput_this['opt_start'] / params['dt']) * params['dt']
+        evinput_this['opt_start'] = floor(evinput_this['opt_start'] / dt) * dt
         evinput_params[input_name]['opt_end'] = ceil(
-            evinput_this['opt_end'] / params['dt']) * params['dt']
+            evinput_this['opt_end'] / dt) * dt
 
     for evinput_this in evinput_params.values():
         del evinput_this['mean'], evinput_this['sigma'], evinput_this['cdf']
@@ -228,19 +227,17 @@ def consolidate_chunks(inputs):
     return chunks
 
 
-def optrun(new_params, opt_params, params, opt_dpls):
+def optrun(new_net, opt_params, opt_dpls):
     """ This is the function to run a simulation
 
     Parameters
     ----------
-    new_params: Array
+    new_net: Array
         List or numpy array with the parameters chosen by
         optimization engine. Order is consistent with
         opt_params['ranges'].
     opt_params : dict
         The optimization parameters
-    params : dict
-        The params dictionary.
     opt_dpls : dict
         Dictionary with keys exp_dpl and best for
         the experimental dipole and best dipole.
@@ -257,14 +254,9 @@ def optrun(new_params, opt_params, params, opt_dpls):
     if _BACKEND is None:
         _BACKEND = JoblibBackend(n_jobs=1)
 
-    # set parameters
-    for param_name, test_value in zip(opt_params['ranges'].keys(), new_params):
-        params[param_name] = test_value
-
     # run the simulation, but stop early if possible
-    params['tstop'] = opt_params['opt_end']
-    net = Network(params, add_drives_from_params=True)
-    dpls = _BACKEND.simulate(net, n_trials=1)
+    new_net._params['tstop'] = opt_params['opt_end']
+    dpls = _BACKEND.simulate(new_net, n_trials=1)
     # avg_dpl = average_dipoles(dpls)
     avg_dpl = dpls[0].copy()
     avg_rmse = rmse(avg_dpl, opt_dpls['exp_dpl'],
@@ -303,15 +295,29 @@ def run_optimization(maxiter, param_ranges, optrun):
     return result
 
 
-def optimize_evoked(params, exp_dpl, maxiter,
+def _update_net(net, opt_params):
+    for drive_name, drive in net.external_drives.items():
+        net.external_drives[drive_name][
+            'mu'] = opt_params['ranges'][f'mu_{drive_name}']['initial']
+        net.external_drives[drive_name][
+            'sigma'] = opt_params['ranges'][f'sigma_{drive_name}']['initial']
+        for receptor in ['weights_ampa', 'weights_nmda']:
+            for target_celltype, drive_weight in drive[receptor].items():
+                label = f'{receptor}_{drive_name}_{target_celltype}'
+                net.external_drives[drive_name][
+                    receptor][target_celltype] = opt_params[
+                        'ranges'][label]['initial']
+
+
+def optimize_evoked(net, exp_dpl, maxiter,
                     timing_range_multiplier=3.0, sigma_range_multiplier=50.0,
                     synweight_range_multiplier=500.0, decay_multiplier=1.6):
     """Optimize drives to generate evoked response.
 
     Parameters
     ----------
-    params : dict
-        The initial params
+    net : instance of Network
+        The Network object
     exp_dpl : instance of Dipole
         The target experimental dipole.
     maxiter : int
@@ -336,8 +342,8 @@ def optimize_evoked(params, exp_dpl, maxiter,
     if _BACKEND is None:
         _BACKEND = JoblibBackend(n_jobs=1)
 
+    net = net.copy()
     print("Running simulation with initial parameters")
-    net = Network(params, add_drives_from_params=True)
     initial_dpl = _BACKEND.simulate(net, n_trials=1)
 
     # Create a sorted dictionary with the inputs and parameters
@@ -349,14 +355,14 @@ def optimize_evoked(params, exp_dpl, maxiter,
     # the simulation timeframe to optimize. Chunks are consolidated if
     # more than one input should
     # be optimized at a time.
-    evinput_params = split_by_evinput(params, sigma_range_multiplier,
+    evinput_params = split_by_evinput(net, sigma_range_multiplier,
                                       timing_range_multiplier,
                                       synweight_range_multiplier)
-    evinput_params = _generate_weights(evinput_params, params,
+    evinput_params = _generate_weights(evinput_params, net,
                                        decay_multiplier)
     param_chunks = consolidate_chunks(evinput_params)
 
-    avg_rmse = rmse(initial_dpl[0], exp_dpl, tstop=params['tstop'])
+    avg_rmse = rmse(initial_dpl[0], exp_dpl, tstop=net._params['tstop'])
     print("Initial RMSE: %.2f" % avg_rmse)
 
     opt_params = dict()
@@ -375,8 +381,7 @@ def optimize_evoked(params, exp_dpl, maxiter,
         if (opt_params['cur_step'] > 0 and
                 opt_params['cur_step'] == total_steps - 1):
             # update currently used params
-            for var_name in opt_params['ranges']:
-                params[var_name] = opt_params['ranges'][var_name]['initial']
+            _update_net(net, opt_params)
 
             # For the last step (all inputs), recalculate ranges and update
             # param_chunks. If previous optimization steps increased
@@ -387,10 +392,10 @@ def optimize_evoked(params, exp_dpl, maxiter,
             # The purpose of the last step (with regular RMSE) is to clean up
             # overfitting introduced by local weighted RMSE optimization.
 
-            evinput_params = split_by_evinput(params, sigma_range_multiplier,
+            evinput_params = split_by_evinput(net, sigma_range_multiplier,
                                               timing_range_multiplier,
                                               synweight_range_multiplier)
-            evinput_params = _generate_weights(evinput_params, params,
+            evinput_params = _generate_weights(evinput_params, net,
                                                decay_multiplier)
             param_chunks = consolidate_chunks(evinput_params)
 
@@ -404,9 +409,8 @@ def optimize_evoked(params, exp_dpl, maxiter,
         opt_params['stepminopterr'] = 1e9  # min optimization error so far
         opt_dpls = dict(best_dpl=None, exp_dpl=exp_dpl)
 
-        def _optrun(new_params):
-            return optrun(new_params, opt_params,
-                          params, opt_dpls=opt_dpls)
+        def _optrun(new_net):
+            return optrun(new_net, opt_params, opt_dpls=opt_dpls)
 
         print('Optimizing from [%3.3f-%3.3f] ms' % (opt_params['opt_start'],
                                                     opt_params['opt_end']))
@@ -419,9 +423,8 @@ def optimize_evoked(params, exp_dpl, maxiter,
             opt_params['ranges'][var_name]['initial'] = value
 
     # save the optimized params
-    for var_name in opt_params['ranges']:
-        params[var_name] = opt_params['ranges'][var_name]['initial']
+    _update_net(net, opt_params)
 
-    avg_rmse = rmse(opt_dpls['best_dpl'], exp_dpl, tstop=params['tstop'])
+    avg_rmse = rmse(opt_dpls['best_dpl'], exp_dpl, tstop=net._params['tstop'])
     print("Final RMSE: %.2f" % avg_rmse)
-    return params
+    return net

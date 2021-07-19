@@ -56,7 +56,7 @@ from hnn_core.optimization import optimize_evoked
 
 maxiter = 50
 with MPIBackend(n_procs=n_procs, mpi_cmd=mpi_cmd):
-    params_optim = optimize_evoked(params, exp_dpl, maxiter)
+    params_optim = optimize_evoked(net, exp_dpl, maxiter)
 
 ###############################################################################
 # Now, let's simulate the dipole with the optimized parameters.
