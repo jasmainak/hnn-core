@@ -36,6 +36,9 @@ Changelog
 
 - Add ``calcium_model`` with a distance dependent calcium channel conductivity, by `Nick Tolley`_ in `#348 <https://github.com/jonescompneurolab/hnn-core/pull/333>`_
 
+- Add :func:`~hnn_core.optimize_evoked` to optimize the timing and weights of driving inputs for simulating
+  evoked responses, by `Blake Caldwell`_ and `Mainak Jas`_ in `#77 <https://github.com/jonescompneurolab/hnn-core/pull/333>`_
+
 Bug
 ~~~
 
