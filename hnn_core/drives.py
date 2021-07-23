@@ -31,19 +31,6 @@ def _check_drive_parameter_values(drive_type, **kwargs):
         if kwargs['tstart'] < 0:
             raise ValueError(f'Start time of {drive_type} drive cannot be '
                              'negative')
-    if 'tstop' in kwargs:
-        if kwargs['tstop'] < 0.:
-            raise ValueError(f'End time of {drive_type} drive cannot be '
-                             'negative')
-    if 'tstop' in kwargs and 'sim_end_time' in kwargs:
-        if kwargs['tstop'] > kwargs['sim_end_time']:
-            raise ValueError(f"End time of {drive_type} drive cannot exceed "
-                             f"simulation end time {kwargs['sim_end_time']}. "
-                             f"Got {kwargs['tstop']}.")
-    if 'tstart' in kwargs and 'tstop' in kwargs:
-        if kwargs['tstop'] - kwargs['tstart'] < 0.:
-            raise ValueError(f'Duration of {drive_type} drive cannot be '
-                             'negative')
 
     if ('numspikes' in kwargs and 'spike_isi' in kwargs and
             'burst_rate' in kwargs):
@@ -143,7 +130,8 @@ def _add_drives_from_params(net):
             t0=bias_specs['tonic'][cellname]['t0'],
             tstop=bias_specs['tonic'][cellname]['tstop'])
 
-    net._instantiate_drives(n_trials=net._params['N_trials'])
+    net._instantiate_drives(tstop=net._params['tstop'],
+                            n_trials=net._params['N_trials'])
 
 
 def _get_prng(seed, gid, sync_evinput=False):
@@ -182,7 +170,7 @@ def _get_prng(seed, gid, sync_evinput=False):
 
 
 def _drive_cell_event_times(drive_type, drive_conn, dynamics,
-                            trial_idx=0, drive_cell_gid=0, seedcore=0):
+                            tstop, trial_idx=0, drive_cell_gid=0, seedcore=0):
     """Generate event times for one artificial drive cell based on dynamics.
 
     Parameters
@@ -200,6 +188,8 @@ def _drive_cell_event_times(drive_type, drive_conn, dynamics,
         defines AMPA and NMDA weights, and the cell target (e.g. 'L2_basket')
     dynamics : dict
         Parameters of the event time dynamics to simulate
+    tstop : float
+        The simulation end time.
     trial_idx : int
         The index number of the current trial of a simulation (default=1).
     drive_cell_gid : int
