@@ -306,9 +306,12 @@ class HNNGUI:
         self.clear_button.on_click(_clear_params)
         self.viz_layout_selection.observe(_handle_viz_layout_change, 'value')
 
-    def run(self):
-        """Compose widgets"""
+    def show(self):
+        """Show the GUI."""
+        display(self.main_dashboard)
 
+    def compose_widgets(self):
+        """Compose widgets"""
         simulation_box = VBox([
             self.tstop, self.tstep, self.ntrials, self.backend_selection,
             self._backend_config_out
@@ -332,16 +335,16 @@ class HNNGUI:
         # from IPywidgets > 8.0
         drives_options = VBox([drive_selections, self._drives_out])
         # Tabs for left pane
-        left_tab = Tab()
-        left_tab.children = [
+        self.left_tab = Tab()
+        self.left_tab.children = [
             simulation_box, self._connectivity_out, drives_options
         ]
         titles = ['Simulation', 'Cell connectivity', 'Drives']
         for idx, title in enumerate(titles):
-            left_tab.set_title(idx, title)
+            self.left_tab.set_title(idx, title)
 
-        hnn_gui = AppLayout(
-            header=self._header, left_sidebar=left_tab,
+        self.main_dashboard = AppLayout(
+            header=self._header, left_sidebar=self.left_tab,
             right_sidebar=self._visualization_window,
             footer=self._footer,
             pane_widths=[
@@ -371,8 +374,6 @@ class HNNGUI:
                                     self.drive_boxes, self._connectivity_out,
                                     self.connectivity_sliders, self.tstop,
                                     self._load_info)
-
-        return hnn_gui
 
 
 def create_expanded_button(description, button_style, height, disabled=False,

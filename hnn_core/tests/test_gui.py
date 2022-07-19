@@ -26,7 +26,7 @@ def test_gui_load_params():
 def test_gui_upload_params():
     """Test if gui handles uploaded parameters correctly"""
     gui = HNNGUI()
-    _ = gui.run()
+    gui.compose_widgets()
 
     params_name = 'default.json'
     hnn_core_root = op.join(op.dirname(hnn_core.__file__))
@@ -148,7 +148,7 @@ def test_gui_init_network():
 def test_gui_run_simulation_mpi():
     """Test if run button triggers simulation with MPIBackend."""
     gui = HNNGUI()
-    _ = gui.run()
+    gui.compose_widgets()
     gui.backend_selection.value = "MPI"
     gui.tstop.value = 30  # speed up tests
     gui.run_button.click()
@@ -161,8 +161,8 @@ def test_gui_run_simulation_mpi():
 def test_gui_run_simulation():
     """Test if run button triggers simulation."""
     gui = HNNGUI()
-    app_layout = gui.run()
-    assert app_layout is not None
+    gui.run()
+    assert gui.main_dashboard is not None
     assert gui.backend_selection.value == "Joblib"
     val_tstop = 20
     val_ntrials = 1
