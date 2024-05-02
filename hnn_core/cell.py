@@ -737,11 +737,14 @@ class Cell:
         loc : float (0 to 1)
             The location of the input in the soma section.
         """
-        stim = h.IClamp(self._nrn_sections['soma'](loc))
-        stim.delay = t0
-        stim.dur = tstop - t0
-        stim.amp = amplitude
-        self.tonic_biases.append(stim)
+        for nrn_sect in self._nrn_sections:
+            if nrn_sect not in self.sect_loc:
+                continue
+            stim = h.IClamp(nrn_sect(loc))
+            stim.delay = t0
+            stim.dur = tstop - t0
+            stim.amp = amplitude
+            self.tonic_biases.append(stim)
 
     def record(self, record_vsec=False, record_isec=False):
         """ Record current and voltage from all sections
