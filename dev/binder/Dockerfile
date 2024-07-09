@@ -1,4 +1,4 @@
-FROM jupyter/minimal-notebook:65761486d5d3 
+FROM jupyter/minimal-notebook:x86_64-2022-10-09
 
 MAINTAINER Jupyter Help <jupyter-help@brown.edu>
 
@@ -12,19 +12,15 @@ RUN apt-get update && apt-get -yq dist-upgrade \
     curl \
     gcc \
     libopenmpi-dev \
-    automake \
-    libtool \
     && apt-get clean
 
 USER $NB_UID
 
 RUN pip install --upgrade pip
-RUN npm i npm@latest -g
 
 USER $NB_UID
 
 RUN pip install --upgrade pip
-RUN npm i npm@latest -g
 
 USER root
 
@@ -32,22 +28,27 @@ RUN apt-get install -yq --no-install-recommends \
     xvfb \
     x11-utils \
     libx11-dev \
-    qt5-default \
-    libncurses-dev \
-    flex \
-    bison \
+    qtbase5-dev \
+    qt5-qmake \
     && apt-get clean
+
+ENV DISPLAY=:99
+
+USER $NB_UID
+
+RUN pip install vtk && \
+    pip install numpy && \
+    pip install scipy && \
+    pip install pyqt5 && \
+    pip install xvfbwrapper && \
+    pip install pyvista && \
+    pip install pyvistaqt && \
+    pip install nibabel && \
+    pip install ipyevents && \
+    pip install darkdetect
 
 USER ${NB_UID}
 
-RUN pip install numpy && \
-    pip install scipy && \
-    pip install matplotlib && \
-    pip install pyqt5 && \
-	pip install 'ipywidgets<=7.7.1' && \
-    pip install pillow && \
-    pip install https://api.github.com/repos/mne-tools/mne-python/zipball/master
-    
 RUN pip install mpi4py
 
 RUN git clone https://github.com/neuronsimulator/nrn && \
@@ -61,19 +62,7 @@ RUN git clone https://github.com/neuronsimulator/nrn && \
 
 ENV PATH=${PATH}:${HOME}/x86_64/bin
 
-RUN git clone https://github.com/jonescompneurolab/hnn-core.git && \
-	cd hnn-core && \
-    make && \
-    python setup.py develop
-
-ENV PATH=${PATH}:${HOME}/hnn-core/x86_64/
-
-RUN git init . && \
-    git remote add origin https://github.com/jonescompneurolab/hnn-core.git && \
-	git fetch origin gh-pages && \
-	git checkout gh-pages
+RUN pip install hnn_core
 
 # Add an x-server to the entrypoint. This is needed by Mayavi
-ENTRYPOINT ["tini", "-g", "--", "xvfb-run"] 
-
-# CMD ["jupyter", "notebook", "--ip", "0.0.0.0"]
+ENTRYPOINT ["tini", "-g", "--", "xvfb-run"]
